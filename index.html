@@ -1,0 +1,326 @@
+{<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fully Automatic Time Keeper</title>
+    <!-- Bootstrap for UI -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; }
+        .tab-content { padding: 20px; }
+        .employee-card { margin-bottom: 20px; }
+        .summary-table th, .summary-table td { text-align: center; }
+        .daily-form { max-width: 400px; margin: auto; }
+        .monthly-table { width: 100%; }
+        .monthly-table th, .monthly-table td { padding: 8px; text-align: center; }
+        .ot-highlight { background-color: #fff3cd; }
+        .navbar { background-color: #007bff; color: white; }
+        .navbar-brand { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-clock"></i> Fully Automatic Time Keeper</a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <ul class="nav nav-tabs" id="timeKeeperTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab">Daily Sheet</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab">Monthly Sheet</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab">Summary Sheet</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="timeKeeperTabContent">
+            <!-- Daily Sheet -->
+            <div class="tab-pane fade show active" id="daily" role="tabpanel">
+                <h3 class="mt-3"><i class="fas fa-calendar-day"></i> Daily Time Entry</h3>
+                <div class="employee-card">
+                    <label for="employeeSelect">Select Employee:</label>
+                    <select id="employeeSelect" class="form-select mb-3">
+                        <option value="">-- Add/Select Employee --</option>
+                    </select>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">Add Employee</button>
+                </div>
+                <form class="daily-form" id="dailyForm">
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inTime" class="form-label">In Time (HH:MM)</label>
+                        <input type="time" class="form-control" id="inTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="outTime" class="form-label">Out Time (HH:MM)</label>
+                        <input type="time" class="form-control" id="outTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Calculated Total Hours: <span id="totalHours">0.00</span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Calculated OT: <span id="otHours">0.00</span></label>
+                    </div>
+                    <button type="submit" class="btn btn-success">Save Entry</button>
+                </form>
+            </div>
+
+            <!-- Monthly Sheet -->
+            <div class="tab-pane fade" id="monthly" role="tabpanel">
+                <h3 class="mt-3"><i class="fas fa-calendar-alt"></i> Monthly Overview</h3>
+                <div class="employee-card">
+                    <label for="monthlyEmployeeSelect">Select Employee:</label>
+                    <select id="monthlyEmployeeSelect" class="form-select mb-3">
+                        <option value="">-- Select Employee --</option>
+                    </select>
+                </div>
+                <table class="table table-bordered monthly-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>In Time</th>
+                            <th>Out Time</th>
+                            <th>Total Hours</th>
+                            <th>OT</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="monthlyTableBody">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Sheet -->
+            <div class="tab-pane fade" id="summary" role="tabpanel">
+                <h3 class="mt-3"><i class="fas fa-chart-bar"></i> Employee Summary</h3>
+                <button id="exportCsvBtn" class="btn btn-info mb-3"><i class="fas fa-download"></i> Export Summary to CSV</button>
+                <table class="table table-striped summary-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Total Days Worked</th>
+                            <th>Total Hours</th>
+                            <th>Total OT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <!-- Rows populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Employee -->
+    <div class="modal fade" id="addEmployeeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Employee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" id="newEmployeeName" placeholder="Employee Name">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="addEmployeeBtn">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Data storage (simulates Excel sheets)
+        let employees = JSON.parse(localStorage.getItem('employees')) || [];
+        let timeEntries = JSON.parse(localStorage.getItem('timeEntries')) || {}; // {employee: {date: {in, out, hours, ot}}}
+
+        // Utility: Calculate hours and OT
+        function calculateHours(inTime, outTime) {
+            const inMinutes = new Date(`1970-01-01T${inTime}:00`).getTime() / 60000;
+            const outMinutes = new Date(`1970-01-01T${outTime}:00`).getTime() / 60000;
+            const totalMinutes = outMinutes - inMinutes;
+            const hours = totalMinutes / 60;
+            const ot = Math.max(0, hours - 8);
+            return { hours: hours.toFixed(2), ot: ot.toFixed(2) };
+        }
+
+        // Update employee selects
+        function updateEmployeeSelects() {
+            const selects = ['employeeSelect', 'monthlyEmployeeSelect'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '<option value="">-- Select Employee --</option>';
+                employees.forEach(emp => {
+                    select.innerHTML += `<option value="${emp}">${emp}</option>`;
+                });
+            });
+        }
+
+        // Daily Form Submission
+        document.getElementById('dailyForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const emp = document.getElementById('employeeSelect').value;
+            const date = document.getElementById('date').value;
+            const inTime = document.getElementById('inTime').value;
+            const outTime = document.getElementById('outTime').value;
+            if (!emp || !date || !inTime || !outTime) return alert('Fill all fields!');
+            const calc = calculateHours(inTime, outTime);
+            if (!timeEntries[emp]) timeEntries[emp] = {};
+            timeEntries[emp][date] = { in: inTime, out: outTime, hours: calc.hours, ot: calc.ot };
+            localStorage.setItem('timeEntries', JSON.stringify(timeEntries));
+            alert('Entry saved!');
+            this.reset();
+            updateMonthlyTable();
+            updateSummaryTable();
+        });
+
+        // Real-time calculation in Daily Form
+        ['inTime', 'outTime'].forEach(id => {
+            document.getElementById(id).addEventListener('input', function() {
+                const inTime = document.getElementById('inTime').value;
+                const outTime = document.getElementById('outTime').value;
+                if (inTime && outTime) {
+                    const calc = calculateHours(inTime, outTime);
+                    document.getElementById('totalHours').textContent = calc.hours;
+                    document.getElementById('otHours').textContent = calc.ot;
+                }
+            });
+        });
+
+        // Update Monthly Table
+        function updateMonthlyTable() {
+            const emp = document.getElementById('monthlyEmployeeSelect').value;
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+            if (!emp) return;
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const entry = timeEntries[emp]?.[dateStr] || {};
+                const rowClass = entry.ot > 0 ? 'ot-highlight' : '';
+                tbody.innerHTML += `
+                    <tr class="${rowClass}">
+                        <td>${dateStr}</td>
+                        <td><input type="time" value="${entry.in || ''}" onchange="updateEntry('${emp}', '${dateStr}', 'in', this.value)"></td>
+                        <td><input type="time" value="${entry.out || ''}" onchange="updateEntry('${emp}', '${dateStr}', 'out', this.value)"></td>
+                        <td>${entry.hours || '0.00'}</td>
+                        <td>${entry.ot || '0.00'}</td>
+                        <td><button class="btn btn-sm btn-danger" onclick="deleteEntry('${emp}', '${dateStr}')">Delete</button></td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Update entry from Monthly Table
+        function updateEntry(emp, date, field, value) {
+            if (!timeEntries[emp]) timeEntries[emp] = {};
+            if (!timeEntries[emp][date]) timeEntries[emp][date] = { in: '', out: '', hours: '0.00', ot: '0.00' };
+            timeEntries[emp][date][field] = value;
+            if (timeEntries[emp][date].in && timeEntries[emp][date].out) {
+                const calc = calculateHours(timeEntries[emp][date].in, timeEntries[emp][date].out);
+                timeEntries[emp][date].hours = calc.hours;
+                timeEntries[emp][date].ot = calc.ot;
+            }
+            localStorage.setItem('timeEntries', JSON.stringify(timeEntries));
+            updateMonthlyTable();
+            updateSummaryTable();
+        }
+
+        // Delete entry
+        function deleteEntry(emp, date) {
+            if (timeEntries[emp]) delete timeEntries[emp][date];
+            localStorage.setItem('timeEntries', JSON.stringify(timeEntries));
+            updateMonthlyTable();
+            updateSummaryTable();
+        }
+
+        // Update Summary Table
+        function updateSummaryTable() {
+            const tbody = document.getElementById('summaryTableBody');
+            tbody.innerHTML = '';
+            employees.forEach(emp => {
+                const entries = timeEntries[emp] || {};
+                let totalDays = 0, totalHours = 0, totalOt = 0;
+                Object.values(entries).forEach(entry => {
+                    if (entry.hours > 0) totalDays++;
+                    totalHours += parseFloat(entry.hours || 0);
+                    totalOt += parseFloat(entry.ot || 0);
+                });
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${emp}</td>
+                        <td>${totalDays}</td>
+                        <td>${totalHours.toFixed(2)}</td>
+                        <td>${totalOt.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Export to CSV
+        document.getElementById('exportCsvBtn').addEventListener('click', function() {
+            let csvContent = 'Employee,Total Days Worked,Total Hours,Total OT\n'; // Headers
+            employees.forEach(emp => {
+                const entries = timeEntries[emp] || {};
+                let totalDays = 0, totalHours = 0, totalOt = 0;
+                Object.values(entries).forEach(entry => {
+                    if (entry.hours > 0) totalDays++;
+                    totalHours += parseFloat(entry.hours || 0);
+                    totalOt += parseFloat(entry.ot || 0);
+                });
+                csvContent += `${emp},${totalDays},${totalHours.toFixed(2)},${totalOt.toFixed(2)}\n`;
+            });
+            // Create and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'time_keeper_summary.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Add Employee
+        document.getElementById('addEmployeeBtn').addEventListener('click', function() {
+            const name = document.getElementById('newEmployeeName').value.trim();
+            if (name && !employees.includes(name)) {
+                employees.push(name);
+                localStorage.setItem('employees', JSON.stringify(employees));
+                updateEmployeeSelects();
+                document.getElementById('newEmployeeName').value = '';
+                bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal')).hide();
+                updateSummaryTable();
+            } else {
+                alert('Invalid or duplicate name!');
+            }
+        });
+
+        // Event listeners for selects
+        document.getElementById('monthlyEmployeeSelect').addEventListener('change', updateMonthlyTable);
+
+        // Initialize
+        updateEmployeeSelects();
+        updateSummaryTable();
+    </script>
+</body>
+</html>
+}
